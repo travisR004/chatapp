@@ -5,27 +5,59 @@
     return $(".message").val()
   };
 
-  var sendText = function(currentChat) {
-    currentChat.sendMessage(getMessage())
+  var processInput = function(currentChat) {
+    if(getMessage()[0] === "/"){
+      currentChat.processCommand(getMessage().slice(1))
+    } else {
+      currentChat.sendMessage(getMessage())
+    }
   }
 
   var addToTop = function () {
-    $(".received-messages").prepend(getMessage())
+    // $(".received-messages").prepend(getMessage())
+  }
+
+  var updateRoom = function(currentChat, room){
+    currentChat.room = room;
+  }
+
+  var showRoomList = function(currentChat, currentRooms, nicknames){
+    debugger
+    var room = currentChat.room;
+    var usersInRoom = [];
+    var namesInRoom = [];
+    for (key in currentRooms) {
+      if (currentRooms.hasOwnProperty(key)) {
+        if (currentRooms[key] === room) {
+          usersInRoom.push(key)
+        }
+      }
+    }
+    usersInRoom.forEach(function(socketIds){
+      namesInRoom.push(nicknames[socketIds]);
+    })
+    debugger
+    $(".users-in-room").empty()
+    namesInRoom.forEach(function(user){
+      $(".users-in-room").append(user)
+    })
   }
 
   $(document).ready(function() {
     var socket = io.connect();
     var currentChat = new ChatApp.Chat(socket);
 
-    //listening new messages
-    socket.on("message", function(data) {
-      io.sockets.emit("pingback", {text: data.text})
-    });
+    socket.on("room", function(data){
+      updateRoom(currentChat, data.room)
+    })
 
-    //sending new messages
+    socket.on("roomList", function(data){
+      showRoomList(currentChat, data.currentRooms, data.nicknames)
+    })
+
     $(".submit").click( function(event) {
       event.preventDefault();
-      sendText(currentChat);
+      processInput(currentChat);
       addToTop();
     })
   })
